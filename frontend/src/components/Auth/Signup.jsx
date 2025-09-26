@@ -1,5 +1,5 @@
 import React from "react";
-import loginImage from ".../assets/login2.avif";  
+import loginImage from "../../assets/login2.avif";  
 
 const SignUp = () => {
   return (
