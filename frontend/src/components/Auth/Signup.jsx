@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Sparkles, Mail, Lock } from "lucide-react";
 import { LuUserRound } from "react-icons/lu";
-import {Link} from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { validateEmail } from "../../utils/helper";
+import { API_PATHS } from "../../utils/apiPaths";
+import axiosInstance from "../../utils/axiosInstance";
 
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
-  const [name, setName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isHoveringLogin, setIsHoveringLogin] = useState(false);
@@ -13,6 +17,9 @@ export default function Signup() {
   const [hoverApple, setHoverApple] = useState(false);
   const [hoverSignUp, setHoverSignUp] = useState(false);
   const [colorPhase, setColorPhase] = useState(0);
+  const [error, setError] = useState("");
+
+  const navigate = useNavigate();
 
   // Animate color gradients continuously
   useEffect(() => {
@@ -22,9 +29,58 @@ export default function Signup() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    console.log("Login attempted with:", { email, password });
+
+    // Validation with immediate return on failure
+    if (!fullName) {
+      setError("Please enter full name");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter the password");
+      return;
+    }
+
+    setError("");
+
+    // Debug log (remove in production)
+    console.log("Signup payload sent:", { fullName, email, password });
+
+    // Signup API call
+    try {
+      const response = await axiosInstance.post(API_PATHS.AUTH.REGISTER, {
+        name: fullName, // Changed to fullName for API compatibility
+        email,
+        password,
+      });
+      const { token } = response.data;
+      if (token) {
+        localStorage.setItem("token", token);
+        toast.success("Signup successful!");
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        setError(error.response.data.message);
+        toast.error(error.response.data.message);
+        // Debug log for backend error
+        console.error("Backend error:", error.response.data.message);
+      } else {
+        setError("Invalid credentials or server error.");
+        console.error("Unknown error:", error);
+      }
+    }
   };
 
   const getGradientStyle = (offset = 0) => {
@@ -61,7 +117,7 @@ export default function Signup() {
         ></div>
       </div>
 
-      {/* Login Card */}
+      {/* Signup Card */}
       <div className="relative w-full max-w-[90%] sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
         {/* Liquid glass effect container */}
         <div className="relative backdrop-blur-2xl bg-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-2xl border border-white/20 transition-all duration-300 hover:border-white/30 hover:bg-white/15">
@@ -104,25 +160,25 @@ export default function Signup() {
 
             {/* Title */}
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center mb-1 sm:mb-2 transition-all duration-300 hover:scale-105">
-              Welcome 
+              Welcome
             </h2>
             <p className="text-sm sm:text-base text-white/70 text-center mb-6 sm:mb-8">
               Sign up to continue
             </p>
 
             {/* Form */}
-            <div className="space-y-4 sm:space-y-6">
-              {/*username Input*/}
+            <form className="space-y-4 sm:space-y-6" onSubmit={handleSignup}>
+              {/* Full Name Input */}
               <div className="space-y-1 sm:space-y-2">
                 <label className="text-white/90 text-xs sm:text-sm font-medium block">
-                  Username
+                  Full Name
                 </label>
                 <div className="relative group">
                   <LuUserRound className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-white/50 group-focus-within:text-white/80 transition-colors" />
                   <input
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     placeholder="John Doe"
                     className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all duration-300 hover:bg-white/12"
                   />
@@ -188,12 +244,14 @@ export default function Signup() {
                     Remember me
                   </span>
                 </label>
-               
               </div>
+
+              {/* Error Message */}
+              {error && <p className="text-red-500 text-sm pb-2.5">{error}</p>}
 
               {/* Liquid Button */}
               <button
-                onClick={handleSubmit}
+                type="submit"
                 onMouseEnter={() => setIsHoveringLogin(true)}
                 onMouseLeave={() => setIsHoveringLogin(false)}
                 className={`cursor-pointer relative w-full py-3 sm:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl font-semibold text-white overflow-hidden group transition-all duration-300 ${
@@ -205,16 +263,13 @@ export default function Signup() {
                   className="absolute inset-0 transition-all duration-500"
                   style={getGradientStyle(90)}
                 ></div>
-
                 {/* Liquid effect overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-
                 {/* Glow effect */}
                 <div
                   className={`absolute -inset-1 blur-xl opacity-0 group-hover:opacity-70 transition-opacity duration-500`}
                   style={getGradientStyle(90)}
                 ></div>
-
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   Sign up
                   <Sparkles
@@ -249,6 +304,7 @@ export default function Signup() {
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-blue-500/30 translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
                   <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
+                    {/* Google SVG as in your original */}
                     <svg
                       className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 ${
                         hoverGoogle ? "scale-125 rotate-12" : ""
@@ -286,6 +342,7 @@ export default function Signup() {
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 to-green-500/30 translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
                   <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
+                    {/* Apple SVG as in your original */}
                     <svg
                       className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 ${
                         hoverApple ? "scale-125 -rotate-12" : ""
@@ -299,21 +356,22 @@ export default function Signup() {
                   </span>
                 </button>
               </div>
-            </div>
 
-            {/* Sign Up Link */}
-            <p className="text-center text-white/70 mt-6 sm:mt-8 text-xs sm:text-sm md:text-base">
-              Already Have An Account?{" "}
-              <button
-                onMouseEnter={() => setHoverSignUp(true)}
-                onMouseLeave={() => setHoverSignUp(false)}
-                className={`cursor-pointer text-white font-semibold transition-all duration-300 hover:scale-105 inline-block ${
-                  hoverSignUp ? "underline" : ""
-                }`}
-              >
-                <Link to="/">Sign in</Link>
-              </button>
-            </p>
+              {/* Sign Up Link */}
+              <p className="text-center text-white/70 mt-6 sm:mt-8 text-xs sm:text-sm md:text-base">
+                Already Have An Account?{" "}
+                <button
+                  type="button"
+                  onMouseEnter={() => setHoverSignUp(true)}
+                  onMouseLeave={() => setHoverSignUp(false)}
+                  className={`cursor-pointer text-white font-semibold transition-all duration-300 hover:scale-105 inline-block ${
+                    hoverSignUp ? "underline" : ""
+                  }`}
+                >
+                  <Link to="/">Sign in</Link>
+                </button>
+              </p>
+            </form>
           </div>
         </div>
 

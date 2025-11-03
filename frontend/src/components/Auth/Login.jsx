@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Sparkles, Mail, Lock } from "lucide-react";
-import {Link} from "react-router-dom"
+import toast from 'react-hot-toast';
+import { validateEmail } from "../../utils/helper";
+import { API_PATHS } from "../../utils/apiPaths";
+import axiosInstance from "../../utils/axiosInstance";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +15,48 @@ export default function Login() {
   const [hoverApple, setHoverApple] = useState(false);
   const [hoverSignUp, setHoverSignUp] = useState(false);
   const [colorPhase, setColorPhase] = useState(0);
+  const [error, setError] = useState("");
+
+  const navigate = useNavigate();
+
+  // Handle login form submit
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter a password.");
+      return;
+    }
+
+    setError("");
+
+    // Login API call
+    try {
+      const response = await axiosInstance.post(API_PATHS.AUTH.LOGIN, {
+        email,
+        password,
+      });
+      const { token } = response.data;
+      if (token) {
+        localStorage.setItem("token", token);
+        toast.success("Login successful!");
+        navigate("/dashboard"); // Redirect to dashboard
+      }
+    } catch (error) {
+      console.error(error); // Log full error for debugging
+      if (error.response && error.response.data && error.response.data.message) {
+        setError(error.response.data.message);
+        toast.error(error.response.data.message);
+      } else {
+        setError("An error occurred while logging in. Please try again.");
+      }
+    }
+  };
 
   // Animate color gradients continuously
   useEffect(() => {
@@ -19,11 +65,6 @@ export default function Login() {
     }, 50);
     return () => clearInterval(interval);
   }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Login attempted with:", { email, password });
-  };
 
   const getGradientStyle = (offset = 0) => {
     const hue = (colorPhase + offset) % 360;
@@ -74,7 +115,6 @@ export default function Login() {
               }}
             ></div>
           </div>
-
           <style>{`
             @keyframes shimmer {
               0% { background-position: 200% 200%; }
@@ -108,8 +148,8 @@ export default function Login() {
               Sign in to continue
             </p>
 
-            {/* Form */}
-            <div className="space-y-4 sm:space-y-6">
+            {/* FORM Starts Here */}
+            <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
               {/* Email Input */}
               <div className="space-y-1 sm:space-y-2">
                 <label className="text-white/90 text-xs sm:text-sm font-medium block">
@@ -175,10 +215,11 @@ export default function Login() {
                   Forgot password?
                 </button>
               </div>
+              {error && <p className="text-red-500 text-sm pb-2.5">{error}</p>}
 
               {/* Liquid Button */}
               <button
-                onClick={handleSubmit}
+                type="submit"
                 onMouseEnter={() => setIsHoveringLogin(true)}
                 onMouseLeave={() => setIsHoveringLogin(false)}
                 className={`cursor-pointer relative w-full py-3 sm:py-4 text-sm sm:text-base rounded-xl sm:rounded-2xl font-semibold text-white overflow-hidden group transition-all duration-300 ${
@@ -284,21 +325,23 @@ export default function Login() {
                   </span>
                 </button>
               </div>
-            </div>
 
-            {/* Sign Up Link */}
-            <p className="text-center text-white/70 mt-6 sm:mt-8 text-xs sm:text-sm md:text-base">
-              Don't have an account?{" "}
-              <button
-                onMouseEnter={() => setHoverSignUp(true)}
-                onMouseLeave={() => setHoverSignUp(false)}
-                className={`cursor-pointer text-white font-semibold transition-all duration-300 hover:scale-105 inline-block ${
-                  hoverSignUp ? "underline" : ""
-                }`}
-              >
-                <Link to="/signup">Sign up</Link>
-              </button>
-            </p>
+              {/* Sign Up Link */}
+              <p className="text-center text-white/70 mt-6 sm:mt-8 text-xs sm:text-sm md:text-base">
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onMouseEnter={() => setHoverSignUp(true)}
+                  onMouseLeave={() => setHoverSignUp(false)}
+                  className={`cursor-pointer text-white font-semibold transition-all duration-300 hover:scale-105 inline-block ${
+                    hoverSignUp ? "underline" : ""
+                  }`}
+                >
+                  <Link to="/signup">Sign up</Link>
+                </button>
+              </p>
+            </form>
+            {/* FORM Ends Here */}
           </div>
         </div>
 
@@ -308,6 +351,7 @@ export default function Login() {
           style={getGradientStyle(45)}
         ></div>
       </div>
+      
     </div>
   );
 }
