@@ -1,7 +1,8 @@
 // Dashboard.jsx
 import React from "react";
 import Navbar from "./Navbar";
-import { Upload, Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
+import NasaImage from "./NasaImage"; // ✅ Import NASA component
 
 const Dashboard = () => {
   return (
@@ -16,12 +17,13 @@ const Dashboard = () => {
         {/* Image Upload Section */}
         <div className="w-[90%] md:w-[70%] bg-white shadow-lg rounded-2xl p-8 flex flex-col md:flex-row items-center justify-around gap-10 border border-gray-100">
           
-          {/* Input Image Placeholder */}
+          {/* Input Image (NASA Image Integration) */}
           <div className="flex flex-col items-center gap-3">
-            <div className="w-60 h-60 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center hover:border-gray-500 hover:bg-gray-50 transition cursor-pointer">
-              <Upload size={40} className="text-gray-400" />
+            <div className="w-60 h-60 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center overflow-hidden bg-gray-50">
+              {/* ✅ NASA Image Component inside */}
+              <NasaImage />
             </div>
-            <p className="text-gray-600 font-medium">Upload Input Image</p>
+            <p className="text-gray-600 font-medium">Input Image (from NASA API)</p>
           </div>
 
           {/* Arrow / Divider */}
